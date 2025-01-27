@@ -1,308 +1,9 @@
-# import numpy as np
-# import cv2
-
-# def apply_anms(harris_corners, num_best=1000, min_distance=10):
-#     """
-#     Apply Adaptive Non-Maximal Suppression to Harris corner responses.
-    
-#     Args:
-#         harris_corners: Harris corner response matrix
-#         num_best: Number of corners to retain
-#         min_distance: Minimum distance between corners
-        
-#     Returns:
-#         List of (x, y) coordinates of selected corners
-#     """
-#     # Threshold and get coordinates of Harris corners
-#     threshold = 0.01 * harris_corners.max()  # adjust this value as needed
-#     corner_coords = np.where(harris_corners > threshold)
-#     corners = np.column_stack((corner_coords[1], corner_coords[0]))  # x,y format
-#     corner_strengths = harris_corners[corner_coords]
-    
-#     # Initialize arrays for ANMS
-#     N = len(corners)
-#     robustness = np.full(N, np.inf)
-    
-#     # For each corner, find the minimum distance to a stronger corner
-#     for i in range(N):
-#         for j in range(N):
-#             if corner_strengths[j] > corner_strengths[i]:
-#                 dist = np.linalg.norm(corners[i] - corners[j])
-#                 robustness[i] = min(robustness[i], dist)
-    
-#     # Sort corners by robustness
-#     indices = np.argsort(-robustness)  # Descending order
-#     selected_corners = corners[indices[:num_best]]
-    
-#     # Apply minimum distance constraint
-#     final_corners = []
-#     for corner in selected_corners:
-#         if not final_corners or all(np.linalg.norm(corner - fc) >= min_distance for fc in final_corners):
-#             final_corners.append(corner)
-    
-#     return np.array(final_corners)
-
-# def visualize_corners(image, corners):
-#     """
-#     Visualize detected corners on the image.
-    
-#     Args:
-#         image: Original image
-#         corners: Array of (x, y) corner coordinates
-#     """
-#     vis_image = image.copy()
-#     for x, y in corners:
-#         cv2.circle(vis_image, (int(x), int(y)), 3, (0, 255, 0), -1)
-#     return vis_image
-
-# # Example usage:
-# def detect_and_suppress_corners(image, harris_params={'blockSize': 3, 'ksize': 3, 'k': 0.03}, 
-#                               anms_params={'num_best': 1000, 'min_distance': 5}):
-#     """
-#     Complete pipeline for corner detection with ANMS.
-#     """
-#     # Convert to grayscale and float32
-#     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-#     gray = np.float32(gray)
-    
-#     # Apply Gaussian blur
-#     gray = cv2.GaussianBlur(gray, (3,3), 0)
-    
-#     # Detect Harris corners
-#     harris_corners = cv2.cornerHarris(gray, **harris_params) # returns corner response matrix
-    
-#     # Apply ANMS
-#     selected_corners = apply_anms(harris_corners, **anms_params)
-    
-#     # Visualize results
-#     result = visualize_corners(image, selected_corners)
-    
-#     return result, selected_corners
-
-
-# def main():
-#     # Load image
-#     image = cv2.imread(r'C:\Users\farha\Downloads\AutoPano-new\AutoPano-new\Data\1.jpg')
-    
-#     # Detect and suppress corners
-#     result, corners = detect_and_suppress_corners(image)
-    
-#     # Display the result
-#     cv2.imshow('Corners', result)
-#     cv2.waitKey(0)
-#     cv2.destroyAllWindows()
-
-
-# if __name__ == '__main__':
-#     main()
-
-
-# import numpy as np
-# import cv2
-
-# def detect_harris_corners(image, block_size=3, ksize=3, k=0.04):
-#     """
-#     Detect Harris corners in the image.
-#     """
-#     # Convert to grayscale and float32
-#     if len(image.shape) == 3:
-#         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-#     else:
-#         gray = image.copy()
-#     gray = np.float32(gray)
-    
-#     # Apply Gaussian blur
-#     gray = cv2.GaussianBlur(gray, (3,3), 0)
-    
-#     # Detect Harris corners
-#     harris_corners = cv2.cornerHarris(gray, block_size, ksize, k)
-#     print(len(harris_corners))
-    
-#     return harris_corners
-
-# def apply_anms(harris_corners, num_best=1000, min_distance=7):
-#     """
-#     Apply Adaptive Non-Maximal Suppression to Harris corner responses.
-#     """
-#     # Threshold and get coordinates of Harris corners
-#     threshold = 0.005 * harris_corners.max()
-#     corner_coords = np.where(harris_corners > threshold)
-#     corners = np.column_stack((corner_coords[1], corner_coords[0]))  # x,y format
-#     corner_strengths = harris_corners[corner_coords]
-    
-#     # Initialize arrays for ANMS
-#     N = len(corners)
-#     robustness = np.full(N, np.inf)
-    
-#     # For each corner, find the minimum distance to a stronger corner
-#     for i in range(N):
-#         for j in range(N):
-#             if corner_strengths[j] > corner_strengths[i]:
-#                 dist = np.linalg.norm(corners[i] - corners[j])
-#                 robustness[i] = min(robustness[i], dist)
-    
-#     # Sort corners by robustness
-#     indices = np.argsort(-robustness)  # Descending order
-#     selected_corners = corners[indices[:num_best]]
-    
-#     # Apply minimum distance constraint
-#     final_corners = []
-#     for corner in selected_corners:
-#         if not final_corners or all(np.linalg.norm(corner - fc) >= min_distance for fc in final_corners):
-#             final_corners.append(corner)
-    
-#     return np.array(final_corners)
-
-# def get_feature_descriptors(image, corner_points):
-#     """
-#     Generate feature descriptors for given corner points.
-#     """
-#     # Convert to grayscale if needed
-#     if len(image.shape) == 3:
-#         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-#     else:
-#         gray = image.copy()
-    
-#     # Parameters
-#     patch_size = 41
-#     output_size = 8
-#     half_patch = patch_size // 2
-    
-#     # Initialize output array
-#     num_corners = len(corner_points)
-#     feature_vectors = np.zeros((num_corners, output_size * output_size))
-    
-#     # Process each corner point
-#     for idx, corner in enumerate(corner_points):
-#         x, y = int(corner[0]), int(corner[1])
-        
-#         # Handle boundary cases
-#         if (x - half_patch < 0 or x + half_patch >= image.shape[1] or 
-#             y - half_patch < 0 or y + half_patch >= image.shape[0]):
-#             pad_width = ((half_patch, half_patch), (half_patch, half_patch))
-#             padded_image = np.pad(gray, pad_width, mode='reflect')
-#             # Adjust coordinates for padded image
-#             patch = padded_image[
-#                 y:y + patch_size,
-#                 x:x + patch_size
-#             ]
-#         else:
-#             # Extract patch (41x41) centered at corner point
-#             patch = gray[
-#                 y - half_patch:y + half_patch + 1,
-#                 x - half_patch:x + half_patch + 1
-#             ]
-        
-#         # Apply Gaussian blur
-#         blurred_patch = cv2.GaussianBlur(patch, (3, 3), sigmaX=1.5)
-        
-#         # Subsample to 8x8
-#         resized_patch = cv2.resize(blurred_patch, (output_size, output_size))
-        
-#         # Reshape to 64x1 vector
-#         feature_vector = resized_patch.reshape(-1)
-        
-#         # Standardize to zero mean and unit variance
-#         if feature_vector.std() != 0:
-#             feature_vector = (feature_vector - feature_vector.mean()) / feature_vector.std()
-        
-#         feature_vectors[idx] = feature_vector
-    
-#     return feature_vectors
-
-# def visualize_results(image, corners, save_path=None):
-#     """
-#     Visualize detected corners on the image.
-#     """
-#     vis_image = image.copy()
-#     for x, y in corners:
-#         cv2.circle(vis_image, (int(x), int(y)), 3, (0, 255, 0), -1)
-    
-#     if save_path:
-#         cv2.imwrite(save_path, vis_image)
-    
-#     return vis_image
-
-# def process_image(image_path, save_visualization=True):
-#     """
-#     Complete pipeline for processing an image:
-#     1. Detect Harris corners
-#     2. Apply ANMS
-#     3. Generate feature descriptors
-#     """
-#     # Read image
-#     image = cv2.imread(image_path)
-#     if image is None:
-#         raise ValueError(f"Could not read image at {image_path}")
-    
-#     # Detect Harris corners
-#     harris_corners = detect_harris_corners(
-#         image,
-#         block_size=2,
-#         ksize=3,
-#         k=0.02
-#     )
-    
-#     # Apply ANMS
-#     corner_points = apply_anms(
-#         harris_corners,
-#         num_best=1000,
-#         min_distance=7
-#     )
-    
-#     # Generate feature descriptors
-#     descriptors = get_feature_descriptors(image, corner_points)
-    
-#     # Visualize results
-#     if save_visualization:
-#         result_image = visualize_results(
-#             image, 
-#             corner_points,
-#             save_path='corners_detected.jpg'
-#         )
-#     else:
-#         result_image = visualize_results(image, corner_points)
-    
-#     return {
-#         'corners': corner_points,
-#         'descriptors': descriptors,
-#         'visualization': result_image
-#     }
-
-# # Example usage
-# if __name__ == "__main__":
-#     # Process single image
-#     image1_path = r'C:\Users\farha\Downloads\AutoPano-new\AutoPano-new\Data\1.jpg'  # Replace with your image path
-#     image2_path = r'C:\Users\farha\Downloads\AutoPano-new\AutoPano-new\Data\2.jpg'  # Replace with your image path
-
-#     try:
-#         results1 = process_image(image1_path)
-#         results2 = process_image(image2_path)
-        
-#         # Print information about results
-#         print(f"Number of corners in image1 detected: {len(results1['corners'])}")
-#         print(f"Feature descriptor image 1 shape: {results1['descriptors'].shape}")
-
-#         print(f"Number of corners in image2 detected: {len(results2['corners'])}")
-#         print(f"Feature descriptor image 2 shape: {results2['descriptors'].shape}") 
-
-#         # Display results
-#         cv2.imshow('Detected Corners', results1['visualization'])
-#         cv2.waitKey(0)
-#         cv2.destroyAllWindows()
-
-#                 # Display results
-#         cv2.imshow('Detected Corners', results2['visualization'])
-#         cv2.waitKey(0)
-#         cv2.destroyAllWindows()
-        
-#     except Exception as e:
-#         print(f"Error processing image: {str(e)}")
-
 
 import numpy as np
 import cv2
 import os
+import networkx as nx
+
 
 def detect_harris_corners(image, block_size=2, ksize=3, k=0.02):
 
@@ -516,68 +217,123 @@ def match_images(img1, img2, ratio_thresh=0.75, save_visualization=True):
     }
 
 
-def RANSAC(matches,points1,points2,num_iterations, threshold,inlier_percentage=0.75):
+# def RANSAC(matches,points1,points2,num_iterations, threshold,inlier_percentage=0.75):
 
-    num_matches = len(matches)
-    best_inliers_set = []
-    best_Hmatrix = None
+#     num_matches = len(matches)
+#     best_inliers_set = []
+#     best_Hmatrix = None
 
-      # Convert matches to numpy arrays first
-    src_points_all = np.float32([points1[m.queryIdx] for m in matches])
-    dst_points_all = np.float32([points2[m.trainIdx] for m in matches])
+#       # Convert matches to numpy arrays first
+#     src_points_all = np.float32([points1[m.queryIdx] for m in matches])
+#     dst_points_all = np.float32([points2[m.trainIdx] for m in matches])
     
-    for iteration in range(num_iterations):
-        # 1. Randomly select 4 feature pairs
+#     for iteration in range(num_iterations):
+#         # 1. Randomly select 4 feature pairs
         
-        random_indices = np.random.choice(num_matches, 4, replace=False)
+#         random_indices = np.random.choice(num_matches, 4, replace=False)
         
-        # Get the corresponding points
-        src_points = src_points_all[random_indices]
-        dst_points = dst_points_all[random_indices]
+#         # Get the corresponding points
+#         src_points = src_points_all[random_indices]
+#         dst_points = dst_points_all[random_indices]
         
-        # 2. Compute homography H for these points
+#         # 2. Compute homography H for these points
 
-        H = cv2.findHomography(src_points.reshape(-1,1,2), 
-                                dst_points.reshape(-1,1,2), 
-                            method=0)[0]
+#         H = cv2.findHomography(src_points.reshape(-1,1,2), 
+#                                 dst_points.reshape(-1,1,2), 
+#                             method=0)[0]
         
         
             
-        # 3. Compute inliers using SSD
-        current_inliers = []
+#         # 3. Compute inliers using SSD
+#         current_inliers = []
         
-        # Transform all points at once
-        src_points_transformed = cv2.perspectiveTransform(
-            src_points_all.reshape(-1,1,2), H
-        )
+#         # Transform all points at once
+#         src_points_transformed = cv2.perspectiveTransform(
+#             src_points_all.reshape(-1,1,2), H
+#         )
         
-        # Compute SSD for all points at once
-        ssd = np.sum((src_points_transformed - dst_points_all.reshape(-1,1,2)) ** 2, axis=(1,2))
+#         # Compute SSD for all points at once
+#         ssd = np.sum((src_points_transformed - dst_points_all.reshape(-1,1,2)) ** 2, axis=(1,2))
         
-        # Find indices where SSD is below threshold
-        current_inliers = np.where(ssd < threshold)[0]
+#         # Find indices where SSD is below threshold
+#         current_inliers = np.where(ssd < threshold)[0]
         
-        # 4. Check if this is the best set of inliers so far
-        if len(current_inliers) > len(best_inliers_set):
-            best_inliers_set = current_inliers
-            best_Hmatrix = H
+#         # 4. Check if this is the best set of inliers so far
+#         if len(current_inliers) > len(best_inliers_set):
+#             best_inliers_set = current_inliers
+#             best_Hmatrix = H
         
-        # Check if we've found enough inliers
-        inlier_ratio = len(current_inliers) / num_matches
-        if inlier_ratio > inlier_percentage:
-            break
+#         # Check if we've found enough inliers
+#         inlier_ratio = len(current_inliers) / num_matches
+#         if inlier_ratio > inlier_percentage:
+#             break
                 
     
-    # 6. Re-compute H using all inliers
-    if len(best_inliers_set) > 0:
-        src_points = src_points_all[best_inliers_set]
-        dst_points = dst_points_all[best_inliers_set]
-        best_H = cv2.findHomography(src_points.reshape(-1,1,2), 
-                                  dst_points.reshape(-1,1,2), 
-                                  method=0)[0]
+#     # 6. Re-compute H using all inliers
+#     if len(best_inliers_set) > 0:
+#         src_points = src_points_all[best_inliers_set]
+#         dst_points = dst_points_all[best_inliers_set]
+#         best_H = cv2.findHomography(src_points.reshape(-1,1,2), 
+#                                   dst_points.reshape(-1,1,2), 
+#                                   method=0)[0]
     
-    print(f"RANSAC completed with {len(best_inliers_set)} inliers out of {num_matches} matches")
-    return best_H, best_inliers_set
+#     print(f"RANSAC completed with {len(best_inliers_set)} inliers out of {num_matches} matches")
+#     return best_H, best_inliers_set
+
+def RANSAC(matches, corners1, corners2, iterations=1000, threshold=5):
+    # Convert matches to NumPy array if it's not already
+    matches = np.array(matches)
+
+    best_H = None
+    max_inliers = 0
+    final_inliers = None
+
+    for _ in range(iterations):
+        # Ensure we have enough matches
+        if len(matches) < 4:
+            return None, None
+
+        # Randomly select 4 matches
+        sample_indices = np.random.choice(len(matches), 4, replace=False)
+        sample_matches = matches[sample_indices]
+
+        # Extract points for this sample
+        src_points = np.float32([corners1[[m.queryIdx]] for m in sample_matches])
+        dst_points = np.float32([corners2[m.trainIdx] for m in sample_matches])
+
+        # Compute homography
+        try:
+            H, _ = cv2.findHomography(src_points, dst_points)
+        except:
+            continue
+
+        if H is None:
+            continue
+
+        # Transform all source points
+        src_points_all = np.float32([corners1[m.queryIdx] for m in matches])#     src_points_all = np.float32([points1[m.queryIdx] for m in matches])
+        dst_points_all = np.float32([corners2[m.trainIdx] for m in matches])        
+        # Ensure correct reshape for perspectiveTransform
+        src_points_transformed = cv2.perspectiveTransform(
+            src_points_all.reshape(-1, 1, 2), H
+        )
+
+        # Compare transformed points with destination points
+        # dst_points_all = np.float32([corners2[m[1]] for m in matches])
+        
+        # Calculate distance between transformed and actual points
+        distances = np.linalg.norm(src_points_transformed.reshape(-1, 2) - dst_points_all, axis=1)
+        
+        # Count inliers
+        inliers = np.sum(distances < threshold)
+        
+        # Update best homography if more inliers found
+        if inliers > max_inliers:
+            max_inliers = inliers
+            best_H = H
+            final_inliers = np.where(distances < threshold)[0]
+
+    return best_H, final_inliers
 
 def stitch_images(img1, img2, H_matrix):
     """
@@ -638,48 +394,88 @@ def stitch_images(img1, img2, H_matrix):
     
     return output_img
 
+def resize_image(img, scale=0.8):
+    # Get original image dimensions
+    orig_height, orig_width = img.shape[:2]
+    
+    # Calculate new dimensions
+    new_width = int(orig_width * scale)
+    new_height = int(orig_height * scale)
+    
+    # Resize image
+    resized = cv2.resize(img, (new_width, new_height), interpolation=cv2.INTER_AREA)
+    
+    return resized
 
 if __name__ == "__main__":
-    folder_path = r'Phase1/Data/Train/Set1/'  
-    output_folder = r'panorama_results/'  
+    # Read images
+    image2_path = r'Custom1_results_new/1-2.jpg' # Replace with your image path
+    image1_path = r'Custom1_results_new/43-2.jpg'
+    # image1_path = r'C:\Users\farha\Downloads\AutoPano-new\AutoPano-new\Phase1\Code\04.jpg' # Replace with your image path
+    
+    # Read images
+    img1 = resize_image(cv2.imread(image1_path))
+    img2 = resize_image(cv2.imread(image2_path))
 
-    # Ensure output folder exists
-    os.makedirs(output_folder, exist_ok=True)
+    if img1 is None or img2 is None:
+        raise ValueError("Could not read one or both images")
+        
+    # Match images
+    results = match_images(img1, img2)
 
-    # Get list of images in folder
-    image_files = sorted([os.path.join(folder_path, f) for f in os.listdir(folder_path) if f.lower().endswith(('.jpg', '.jpeg', '.png'))])
+    H_matrix = results['H_matrix']
+    height, width, _ = img2.shape
 
-    if len(image_files) < 2:
-        raise ValueError("Need at least two images in the folder to stitch a panorama")
+    panorama = stitch_images(img1, img2, H_matrix)
+    
+    # Display results
+    cv2.imshow('Panorama', panorama)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    cv2.imwrite('Custom1_results_new/fullPano_new.jpg',panorama)  
 
-    # Initialize panorama with the first image
-    panorama = cv2.imread(image_files[0])
-    if panorama is None:
-        raise ValueError(f"Could not read the initial image: {image_files[0]}")
 
-    # Process each subsequent image
-    for i, image_path in enumerate(image_files[1:], start=1):
-        try:
-            img2 = cv2.imread(image_path)
-            if img2 is None:
-                print(f"Could not read image: {image_path}")
-                continue
+# if __name__ == "__main__":
+#     folder_path = r'C:\Users\farha\Downloads\AutoPano-new\AutoPano-new\Data\Set3'
+#     output_folder = r'C:\Users\farha\Downloads\AutoPano-new\AutoPano-new\panorama_results' 
 
-            # Match and stitch images
-            results = match_images(panorama, img2)
-            H_matrix = results['H_matrix']
+#     # Ensure output folder exists
+#     os.makedirs(output_folder, exist_ok=True)
 
-            panorama = stitch_images(panorama, img2, H_matrix)
+#     # Get list of images in folder
+#     image_files = sorted([os.path.join(folder_path, f) for f in os.listdir(folder_path) if f.lower().endswith(('.jpg', '.jpeg', '.png'))])
 
-            # Save intermediate panorama
-            output_file = os.path.join(output_folder, f'panorama_part{i}.jpg')
-            cv2.imwrite(output_file, panorama)
-            print(f"Saved panorama: {output_file}")
+#     if len(image_files) < 2:
+#         raise ValueError("Need at least two images in the folder to stitch a panorama")
 
-        except Exception as e:
-            print(f"Error processing {image_path}: {str(e)}")
+#     # Initialize panorama with the first image
+#     panorama = cv2.imread(image_files[0])
+#     if panorama is None:
+#         raise ValueError(f"Could not read the initial image: {image_files[0]}")
 
-    # Save final panorama
-    final_output = os.path.join(output_folder, 'final_panorama.jpg')
-    cv2.imwrite(final_output, panorama)
-    print(f"Final panorama saved as: {final_output}")
+#     # Process each subsequent image
+#     for i, image_path in enumerate(image_files[1:], start=1):
+#         try:
+#             img2 = cv2.imread(image_path)
+#             if img2 is None:
+#                 print(f"Could not read image: {image_path}")
+#                 continue
+
+#             # Match and stitch images
+#             results = match_images(panorama, img2)
+#             H_matrix = results['H_matrix']
+
+#             panorama = stitch_images(panorama, img2, H_matrix)
+
+#             # Save intermediate panorama
+#             output_file = os.path.join(output_folder, f'panorama_part{i}.jpg')
+#             cv2.imwrite(output_file, panorama)
+#             print(f"Saved panorama: {output_file}")
+
+#         except Exception as e:
+#             print(f"Error processing {image_path}: {str(e)}")
+
+#     # Save final panorama
+#     final_output = os.path.join(output_folder, 'final_panorama.jpg')
+#     cv2.imwrite(final_output, panorama)
+#     print(f"Final panorama saved as: {final_output}")
