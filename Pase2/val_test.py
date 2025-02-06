@@ -188,7 +188,8 @@ import torch
 import cv2
 import argparse
 import matplotlib.pyplot as plt
-from Network.Network_unsupervised import HomographyModel
+from Network.Network_debug import EnhancedHomographyNetWithSTN
+from Network.Network import HomographyModel
 
 # Don't generate pyc codes
 sys.dont_write_bytecode = True
@@ -210,8 +211,8 @@ def load_random_file(val_files):
     Load a random npz file containing a single sample
     """
     # Select random npz file
-    npz_file = random.choice(val_files)
-    #npz_file = "data_25k/Train/313_sample1.npz"
+    #npz_file = random.choice(val_files)
+    npz_file = "data_25k/Train/2312_sample0.npz"
 
     print(f"Loading file: {npz_file}")
     
@@ -247,6 +248,19 @@ def load_random_file(val_files):
     print(f"Shape of PB: {pb.shape}")
     print(f"Shape of H4Pt: {h4pt.shape}")
     print(f"Shape of CA: {ca.shape}")
+    
+    # # Normalize to 0-255 range if necessary (if data is in range 0-1)
+    # if pa_img.max() <= 1.0:
+    #     pa_img = (pa_img * 255).astype(np.uint8)
+    # if pb_img.max() <= 1.0:
+    #     pb_img = (pb_img * 255).astype(np.uint8)
+    
+    # Save the patches
+    base_name = os.path.basename(npz_file).split('.')[0]  # Get filename without extension
+    # cv2.imwrite(f"{base_name}_patch_a.jpg", cv2.cvtColor(pa, cv2.COLOR_RGB2BGR))
+    # cv2.imwrite(f"{base_name}_patch_b.jpg", cv2.cvtColor(pb, cv2.COLOR_RGB2BGR))
+    
+    # print(f"Saved patches as {base_name}_patch_a.jpg and {base_name}_patch_b.jpg")
     
     return pa, pb, h4pt, ca, image
 
@@ -305,9 +319,16 @@ def visualize_results(pa, pb, h4pt_pred, h4pt_true,ca,image):
     corners_gt = (ca.squeeze() + h4pt_true.reshape(4, 2))  # (4, 2)
     corners_pred = (ca.squeeze() + h4pt_pred.reshape(4, 2))  # (4, 2)\ 
     
-    # corners_gt = (ca.squeeze())  # (4, 2)
+    corners_a = (ca.squeeze())  # (4, 2)
     # corners_pred = (ca.squeeze())
 
+    cb_2312 = [[91, 49], [230, 45], [245, 168], [129, 225]]
+    cb_4436 = [[25, 46], [165, 68], [149, 201], [18, 200]]
+    cb_1857 = [[119, 89], [221, 88], [219, 186], [115, 172]]
+    cb_146 = [[134, 67], [239, 97], [265, 229], [148, 209]]
+
+    print(corners_a)
+    print(corners_gt)
     # Plot original patch A
     plt.subplot(1, 3, 1)
     plt.imshow(pa)
@@ -327,15 +348,26 @@ def visualize_results(pa, pb, h4pt_pred, h4pt_true,ca,image):
     plt.axis('off')
 
     # Draw ground truth quadrilateral (Red)
-    plt.plot(*zip(*np.vstack([corners_gt, corners_gt[0]])), 'r-', label="Ground Truth")
+    plt.plot(*zip(*np.vstack([corners_gt, corners_gt[0]])), 'r-', label="GT Waped Patch")
+
+    # Draw Actual Patch (green)
+    plt.plot(*zip(*np.vstack([corners_a, corners_a[0]])), 'g-', label="Actual Patch")
 
     # Draw predicted quadrilateral (Blue)
-    plt.plot(*zip(*np.vstack([corners_pred, corners_pred[0]])), 'b--', label="Predicted")
+    plt.plot(*zip(*np.vstack([corners_pred, corners_pred[0]])), 'b--', label="Unsupervised Warp Estimation")
 
-    plt.legend()
+    # Draw 2312 quadrilateral (Yellow)  
+    #plt.plot(*zip(*np.vstack([cb_2312, cb_2312[0]])), 'y-', label="Classical Warp Estimation")
+
+    #plt.xlim([0, 128])  # Set based on your image size
+    #plt.ylim([128, 0])  # Reverse Y-axis to match image coordinates
+
+
+    plt.legend(loc='upper right', bbox_to_anchor=(1, 1.5))
+
     plt.show()
 
-def test_operation(model_path, base_path):
+def test_operation(model_path, model_sup_path, base_path):
     """
     Main test operation with single-sample input
     """
@@ -343,7 +375,8 @@ def test_operation(model_path, base_path):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     # Initialize model
-    model = HomographyModel().to(device)
+    model = EnhancedHomographyNetWithSTN().to(device)
+    model_sup = HomographyModel().to(device)
     
     # Load checkpoint
     if not os.path.exists(model_path):
@@ -352,6 +385,10 @@ def test_operation(model_path, base_path):
     checkpoint = torch.load(model_path, map_location=device)
     model.load_state_dict(checkpoint['model_state_dict'])
     model.eval()
+
+    checkpoint_sup = torch.load(model_sup_path, map_location=device)
+    model_sup.load_state_dict(checkpoint_sup['model_state_dict'])
+    model_sup.eval()
     
     # Get validation files
     val_files = setup_paths(base_path)
@@ -378,6 +415,7 @@ def test_operation(model_path, base_path):
     
     # Denormalize predictions
     h4pt_pred_denorm = denormalize_h4pt(h4pt_pred)
+    #h4pt_pred_denorm = h4pt_pred    
     h4pt_true_denorm = denormalize_h4pt(h4pt_true)
     
     # Print results
@@ -398,7 +436,7 @@ def main():
     parser.add_argument(
         "--model_path",
         type=str,
-        default="Checkpoints/25model.ckpt",
+        default="Checkpoints/5model.ckpt",
         help="Path to trained model checkpoint"
     )
     parser.add_argument(
