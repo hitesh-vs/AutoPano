@@ -1,2 +1,3 @@
-# AutoPano
-Project on Image stitching using Corner detection, Feature Matching and RANSAC
+# My AutoPano Phase 2 #
+
+* ```Network/Network.py``` contains the network models for the Supervised and Unsupervised Homography Estimation.
