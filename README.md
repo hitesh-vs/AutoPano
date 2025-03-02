@@ -1,3 +1,3 @@
-### Classical and Deep Homography Estimation for Image Stitching and Multiple View Geometry ###
+### RBE 549 - Computer Vision P2Ph1 ###
 
-Implementation of Feature Matching Algorithms and Deep Networks to estimate homography between image pairs. See Report.pdf for further explaination
+Run ```Wrapper.py``` from inside of ```Phase1``` folder.
